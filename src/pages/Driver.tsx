@@ -13,6 +13,8 @@ import { useDriverRoute, useUpsertDriverRoute } from '@/hooks/useDriverRoute';
 import { useDriverSimulator } from '@/hooks/useDriverSimulator';
 import { GeoMap } from '@/shared/ui/GeoMap';
 import { toast } from 'sonner';
+import { useNotificationsStore } from '@/stores/useNotificationsStore';
+import { useAllRequests } from '@/hooks/useRiderRequests';
 
 const driverSchema = z.object({
   driverId: z.string().min(1, 'Driver ID is required'),
@@ -32,10 +34,13 @@ type DriverFormData = z.infer<typeof driverSchema>;
 export default function Driver() {
   const [driverId, setDriverId] = useState(localStorage.getItem('lastmile-driverId') || '');
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
+  const [notifiedGeofence, setNotifiedGeofence] = useState(false);
 
   const { data: stations = [] } = useStations();
   const { data: existingRoute } = useDriverRoute(driverId || null);
   const upsertRoute = useUpsertDriverRoute();
+  const { addNotification } = useNotificationsStore();
+  const { data: allRequests = [] } = useAllRequests();
 
   const firstStation = stations.find((s) => s.id === selectedStations[0]);
   const { isRunning, position, distanceToStation, etaMinutes, insideGeofence, start, stop } =
@@ -73,13 +78,35 @@ export default function Driver() {
     }
   }, [existingRoute, setValue]);
 
+  // Toast and notification when entering geofence
   useEffect(() => {
-    if (insideGeofence && isRunning) {
+    if (insideGeofence && firstStation && !notifiedGeofence) {
       toast.success('Entered geofence—matching would trigger now (mock)', {
         icon: <Navigation className="h-4 w-4" />,
       });
+      addNotification({
+        type: 'driver',
+        title: '📍 Geofence Entered',
+        message: `You've entered the geofence of ${firstStation.name}. Ready to pick up riders!`,
+      });
+      setNotifiedGeofence(true);
+
+      // Check for pending requests at this station
+      const pendingAtStation = allRequests.filter(
+        (r) => r.stationId === firstStation.id && r.status === 'PENDING'
+      );
+      if (pendingAtStation.length > 0) {
+        addNotification({
+          type: 'driver',
+          title: '🚗 Ride Available',
+          message: `${pendingAtStation.length} pending ride${pendingAtStation.length > 1 ? 's' : ''} available at ${firstStation.name}!`,
+        });
+      }
     }
-  }, [insideGeofence, isRunning]);
+    if (!insideGeofence) {
+      setNotifiedGeofence(false);
+    }
+  }, [insideGeofence, firstStation, allRequests, notifiedGeofence, addNotification]);
 
   const onSubmit = async (data: DriverFormData) => {
     try {
