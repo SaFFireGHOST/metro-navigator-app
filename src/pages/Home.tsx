@@ -29,11 +29,11 @@ export default function Home() {
       {/* Hero Section */}
       <section className="text-center space-y-6 py-12">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-          Your Last Mile,{' '}
-          <span className="text-primary">Made Simple</span>
+          Welcome to{' '}
+          <span className="text-primary">LastMile</span>
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-          Connect with fellow commuters for shared rides from metro stations to your destination
+          Get started by choosing your role below
         </p>
         
         <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto pt-8">

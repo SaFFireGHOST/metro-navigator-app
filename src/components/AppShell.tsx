@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
-import { Menu, Moon, Sun } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, Moon, Sun, LogOut } from 'lucide-react';
 import { useRoleStore } from '@/stores/useRoleStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { Button } from '@/components/ui/button';
@@ -20,11 +22,18 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const navigate = useNavigate();
   const { role, setRole } = useRoleStore();
+  const { user, logout } = useAuthStore();
   const isMobile = useIsMobile();
 
   const toggleTheme = () => {
     document.documentElement.classList.toggle('dark');
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -77,6 +86,23 @@ export function AppShell({ children }: AppShellProps) {
                   <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                   <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                 </Button>
+
+                {user && (
+                  <>
+                    <span className="text-sm text-muted-foreground hidden md:inline">
+                      {user.name}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span className="hidden sm:inline">Logout</span>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </header>
