@@ -16,6 +16,8 @@ import { GeoMap } from '@/shared/ui/GeoMap';
 import { toast } from 'sonner';
 import { simulateAssignments } from '@/mocks/riderRepo';
 import { formatDistanceToNow } from 'date-fns';
+import { useNotificationsStore } from '@/stores/useNotificationsStore';
+import { RiderRequest } from '@/lib/types';
 
 const riderSchema = z.object({
   riderId: z.string().min(1, 'Rider ID is required'),
@@ -30,10 +32,12 @@ export default function Rider() {
   const [riderId, setRiderId] = useState(localStorage.getItem('lastmile-riderId') || '');
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [simulateEnabled, setSimulateEnabled] = useState(false);
+  const [previousRequests, setPreviousRequests] = useState<RiderRequest[]>([]);
 
   const { data: stations = [], isLoading: stationsLoading } = useStations();
   const { data: requests = [], isLoading: requestsLoading } = useRiderRequests(riderId || null);
   const createRequest = useCreateRiderRequest();
+  const { addNotification } = useNotificationsStore();
 
   const selectedStation = stations.find((s) => s.id === selectedStationId);
 
@@ -68,6 +72,28 @@ export default function Rider() {
     }, 5000);
     return () => clearInterval(interval);
   }, [simulateEnabled]);
+
+  // Detect assignment changes and show notifications
+  useEffect(() => {
+    if (requests.length === 0) return;
+
+    requests.forEach((request) => {
+      const previous = previousRequests.find((r) => r.id === request.id);
+      if (previous && previous.status === 'PENDING' && request.status === 'ASSIGNED') {
+        const station = stations.find((s) => s.id === request.stationId);
+        addNotification({
+          type: 'rider',
+          title: '🎉 Ride Assigned!',
+          message: `Your ride to ${request.destination} from ${station?.name || 'station'} has been assigned to a driver.`,
+        });
+        toast.success('Ride Assigned!', {
+          description: `Your ride to ${request.destination} has been assigned.`,
+        });
+      }
+    });
+
+    setPreviousRequests(requests);
+  }, [requests, previousRequests, stations, addNotification]);
 
   const onSubmit = async (data: RiderFormData) => {
     try {

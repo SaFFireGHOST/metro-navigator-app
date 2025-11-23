@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Notifications } from '@/components/Notifications';
 import {
   Select,
   SelectContent,
@@ -89,6 +90,7 @@ export function AppShell({ children }: AppShellProps) {
 
                 {user && (
                   <>
+                    <Notifications />
                     <span className="text-sm text-muted-foreground hidden md:inline">
                       {user.name}
                     </span>
